@@ -23,3 +23,8 @@ Get-MavenData -ArtifactId jackson-databind -Version 2.17.0 -GetDependencies
 There is rate limiting in effect. If the rate limit is reached, an error ```HTTP 429``` is sent back followed by a back off period (around 5 minutes, this amount was not measured).
 ## References
 - https://central.sonatype.org/search/rest-api-guide/
+## Changelog
+### 2024-03-24
+Initial release.
+### 2024-07-02
+Added GetDependents parameter, fetches dependents data.

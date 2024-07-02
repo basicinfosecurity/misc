@@ -9,6 +9,8 @@
     The version number (e.g. 2.15.0-rc1)
     .Parameter GetDependencies
     If this paramter is included, the script will retrieve dependencies of each artifact.
+    .Parameter GetDependents
+    If this paramter is included, the script will retrieve dependents of each artifact.
     .Parameter Suppress
     If this paramter is included, the script will hide console output.
     .Parameter Proxy
@@ -21,6 +23,8 @@
     Get-MavenData -ArtifactId jackson-databind -Version 2.17.0 -GetDependencies
     .EXAMPLE
     Get-MavenData -GroupId org.springframework -Suppress
+    .EXAMPLE
+    Get-MavenData -GetDependents -ArtifactId snakeyaml -Version 1.17
 #>
 function Get-MavenData{
     param (
@@ -30,6 +34,7 @@ function Get-MavenData{
         [string]$Version,
         [string]$Proxy = "",
         [switch]$GetDependencies = $false,
+        [switch]$GetDependents = $false,
         [switch]$Suppress = $false
     )
     begin{
@@ -51,6 +56,11 @@ function Get-MavenData{
         }
         $searchEndpoint = "https://search.maven.org/solrsearch/select"
         $dependenciesEndpoint = "https://central.sonatype.com/api/internal/browse/dependencies"
+        $dependentsEndpoint = "https://central.sonatype.com/api/internal/browse/dependents"
+        $endpoint = $null
+        $msg = "dependents"
+        $file_prefix = "maven_"
+        
         if($Suppress){
             function Write-Host {}
         }
@@ -83,9 +93,21 @@ function Get-MavenData{
                     $null = $searchData.Add($tmp)
                 }
             }
+            
             if($GetDependencies){
-                Write-Host "[*] Retrieving dependencies"
-                $dependencies = [System.Collections.ArrayList]::new()
+                $endpoint = $dependenciesEndpoint
+                $msg = "dependencies"
+                $file_prefix = "$file_prefix$msg"
+            }
+            elseif($GetDependents){
+                $endpoint = $dependentsEndpoint
+                $file_prefix = "$file_prefix$msg"
+            }
+            
+            if($endpoint){
+                Write-Host "[*] Retrieving $msg"
+                # $dependencies = [System.Collections.ArrayList]::new()
+                $records = [System.Collections.ArrayList]::new()
                 foreach($artifact in $searchData){
                     $page = 0
                     $pages = 1
@@ -106,7 +128,7 @@ function Get-MavenData{
                     while($page -lt $pages){
                         $arguments = @{
                             UseBasicParsing = $true
-                            Uri = $dependenciesEndpoint
+                            Uri = $endpoint
                             Body = ($json | ConvertTo-Json)
                             Method = "Post"
                             Headers = $headers
@@ -114,7 +136,7 @@ function Get-MavenData{
                         if($Proxy){ $arguments["Proxy"] = $Proxy}
                         $response = Invoke-RestMethod @arguments
                         if($response.totalResultCount -eq 0) {
-                            $null = $dependencies.Add($item)
+                            $null = $records.Add($item)
                             break
                         }
                         $pages = $response.pageCount
@@ -123,7 +145,7 @@ function Get-MavenData{
                         $json["page"] = $page
                         foreach($item in $response.components){
                             $item.licenses = $item.licenses -join "|| "
-                            $null = $dependencies.Add($item)
+                            $null = $records.Add($item)
                         }
                     }
                 }
@@ -140,9 +162,9 @@ function Get-MavenData{
                 $csv = "maven_artifacts-$timestamp.csv"
                 $searchData | Export-Csv -NoTypeInformation $csv
             }
-            if($dependencies.Count -gt 0){
-                $csv = "maven_dependencies-$timestamp.csv"
-                $dependencies | Export-Csv -NoTypeInformation $csv
+            if($records.Count -gt 0){
+                $csv = "$file_prefix-$timestamp.csv"
+                $records | Export-Csv -NoTypeInformation $csv
             }
         }
     }
