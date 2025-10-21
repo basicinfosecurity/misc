@@ -1,5 +1,5 @@
 # WIM
-Scripts to parse WIM files. Also includes a reworked version of [PatchExtract.ps1](https://gist.github.com/wumb0/306f97dc8376c6f53b9f9865f60b4fb5) with the WIM parsing implementation. Read the blog post: https://pleasedonthack.me/At-the-WIM-of-Microsoft/
+Scripts to parse WIM files. Also includes a reworked version of [PatchExtract.ps1](https://gist.github.com/wumb0/306f97dc8376c6f53b9f9865f60b4fb5) with the WIM parsing implementation. Read the blog post: https://pleasedonthack.me/blog/At-the-WIM-of-Microsoft/
 
 ## Usage
 ### wim.ps1
